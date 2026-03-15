@@ -1,0 +1,76 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the Vorux FX platform",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "balance": { "type": "number", "description": "User's account balance" },
+        "role": { "type": "string", "enum": ["client", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "name", "balance", "role", "createdAt"]
+    },
+    "AdminSettings": {
+      "title": "AdminSettings",
+      "description": "Global settings managed by admins",
+      "type": "object",
+      "properties": {
+        "qrisUrl": { "type": "string", "format": "uri" },
+        "usdtAddress": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["qrisUrl", "usdtAddress", "updatedAt"]
+    },
+    "Deposit": {
+      "title": "Deposit",
+      "description": "A deposit request from a client",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "method": { "type": "string", "enum": ["qris", "usdt"] },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "amount", "method", "status", "createdAt"]
+    },
+    "Position": {
+      "title": "Position",
+      "description": "An open trading position",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "symbol": { "type": "string" },
+        "type": { "type": "string", "enum": ["buy", "sell"] },
+        "lotSize": { "type": "number" },
+        "openPrice": { "type": "number" },
+        "currentPrice": { "type": "number" },
+        "profit": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "symbol", "type", "lotSize", "openPrice", "currentPrice", "profit", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "Stores user profiles and balances"
+    },
+    "admin_settings/{settingId}": {
+      "schema": "AdminSettings",
+      "description": "Stores global admin settings like deposit addresses"
+    },
+    "deposits/{depositId}": {
+      "schema": "Deposit",
+      "description": "Stores deposit requests"
+    },
+    "positions/{positionId}": {
+      "schema": "Position",
+      "description": "Stores open trading positions"
+    }
+  }
+}

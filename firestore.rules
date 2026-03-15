@@ -1,0 +1,86 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() &&
+        (request.auth.token.email == "antonsevenn@gmail.com" ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
+    }
+    
+    function hasOnlyAllowedFields(allowedFields) {
+      return request.resource.data.keys().hasOnly(allowedFields);
+    }
+    
+    function isValidUser() {
+      return hasOnlyAllowedFields(['uid', 'email', 'name', 'balance', 'role', 'createdAt']) &&
+             request.resource.data.uid is string && request.resource.data.uid == request.auth.uid &&
+             request.resource.data.email is string &&
+             request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 100 &&
+             request.resource.data.balance is number && request.resource.data.balance >= 0 &&
+             request.resource.data.role in ['client', 'admin'] &&
+             request.resource.data.createdAt is string;
+    }
+    
+    function isValidDeposit() {
+      return hasOnlyAllowedFields(['userId', 'amount', 'method', 'status', 'createdAt']) &&
+             request.resource.data.userId is string && request.resource.data.userId == request.auth.uid &&
+             request.resource.data.amount is number && request.resource.data.amount > 0 &&
+             request.resource.data.method in ['qris', 'usdt'] &&
+             request.resource.data.status in ['pending', 'approved', 'rejected'] &&
+             request.resource.data.createdAt is string;
+    }
+    
+    function isValidPosition() {
+      return hasOnlyAllowedFields(['userId', 'symbol', 'type', 'lotSize', 'openPrice', 'currentPrice', 'profit', 'createdAt']) &&
+             request.resource.data.userId is string && request.resource.data.userId == request.auth.uid &&
+             request.resource.data.symbol is string && request.resource.data.symbol.size() > 0 && request.resource.data.symbol.size() < 20 &&
+             request.resource.data.type in ['buy', 'sell'] &&
+             request.resource.data.lotSize is number && request.resource.data.lotSize > 0 &&
+             request.resource.data.openPrice is number && request.resource.data.openPrice > 0 &&
+             request.resource.data.currentPrice is number && request.resource.data.currentPrice > 0 &&
+             request.resource.data.profit is number &&
+             request.resource.data.createdAt is string;
+    }
+
+    function isValidAdminSettings() {
+      return hasOnlyAllowedFields(['qrisUrl', 'usdtAddress', 'updatedAt']) &&
+             request.resource.data.qrisUrl is string && request.resource.data.qrisUrl.size() < 1000 &&
+             request.resource.data.usdtAddress is string && request.resource.data.usdtAddress.size() < 200 &&
+             request.resource.data.updatedAt is string;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidUser() && ((isOwner(userId) && request.resource.data.role == 'client' && request.resource.data.balance == 0) || isAdmin());
+      allow update: if isAuthenticated() && isValidUser() && ((isOwner(userId) && request.resource.data.role == resource.data.role && request.resource.data.balance == resource.data.balance) || isAdmin());
+    }
+
+    match /admin_settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() && isValidAdminSettings();
+    }
+
+    match /deposits/{depositId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidDeposit() && isOwner(request.resource.data.userId) && request.resource.data.status == 'pending';
+      allow update: if isAdmin() && isValidDeposit();
+    }
+
+    match /positions/{positionId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidPosition() && isOwner(request.resource.data.userId);
+      allow update: if isAuthenticated() && isValidPosition() && isOwner(request.resource.data.userId) && request.resource.data.openPrice == resource.data.openPrice && request.resource.data.type == resource.data.type && request.resource.data.symbol == resource.data.symbol && request.resource.data.lotSize == resource.data.lotSize;
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+  }
+}
