@@ -11,11 +11,26 @@ import Admin from './pages/Admin';
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactNode, requireAdmin?: boolean }) => {
   const { user, userData, loading } = useAuth();
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">Loading...</div>;
-  if (!user) return <Navigate to="/login" />;
-  
-  const isUserAdmin = userData?.role === 'admin' || user.email === 'antonsevenn@gmail.com';
-  if (requireAdmin && !isUserAdmin) return <Navigate to="/dashboard" />;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
+        Memuat...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // cek admin TANPA nunggu firestore lama
+  const isAdmin =
+    user?.email === "antonsevenn@gmail.com" ||
+    userData?.role === "admin";
+
+  if (requireAdmin && !isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return <>{children}</>;
 };
