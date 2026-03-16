@@ -1,9 +1,9 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCh0XR8xt4ddyiO_gtzDiwXa_pmvHUoV6E",
+  apiKey: "AIzaSy...",
   authDomain: "ai-studio-applet-webapp-3c969.firebaseapp.com",
   projectId: "ai-studio-applet-webapp-3c969",
   storageBucket: "ai-studio-applet-webapp-3c969.firebasestorage.app",
@@ -13,4 +13,8 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+
+// 🔥 ganti ini
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+});
