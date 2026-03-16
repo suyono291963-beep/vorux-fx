@@ -23,32 +23,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      try {
-        setUser(currentUser);
 
-        if (currentUser) {
-          const docRef = doc(db, "users", currentUser.uid);
-          const docSnap = await getDoc(docRef);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
 
-          if (docSnap.exists()) {
-            setUserData(docSnap.data());
-          } else {
-            console.warn("User document not found");
+      // langsung hilangkan loading supaya UI cepat
+      setLoading(false);
+
+      if (currentUser) {
+        // ambil firestore di background
+        const fetchUser = async () => {
+          try {
+            const docRef = doc(db, "users", currentUser.uid);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+              setUserData(docSnap.data());
+            } else {
+              setUserData(null);
+            }
+
+          } catch (error) {
+            console.log("Firestore error:", error);
             setUserData(null);
           }
-        } else {
-          setUserData(null);
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
+        };
+
+        fetchUser();
+      } else {
         setUserData(null);
-      } finally {
-        setLoading(false);
       }
+
     });
 
     return () => unsubscribe();
+
   }, []);
 
   return (
