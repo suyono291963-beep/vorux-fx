@@ -1,68 +1,157 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { auth, db } from "../firebase";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { auth } from '../firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { motion } from 'motion/react';
+import { AlertCircle } from 'lucide-react';
 
-interface AuthContextType {
-  user: User | null;
-  userData: any | null;
-  loading: boolean;
+export default function Login() {
+
+const [email,setEmail] = useState('');
+const [password,setPassword] = useState('');
+const [error,setError] = useState('');
+const [loading,setLoading] = useState(false);
+
+const navigate = useNavigate();
+
+const handleLogin = async (e:React.FormEvent)=>{
+e.preventDefault();
+setError('');
+setLoading(true);
+
+```
+try{
+
+  await signInWithEmailAndPassword(auth,email,password);
+
+  // langsung redirect
+  if(email === "antonsevenn@gmail.com"){
+    navigate("/admin");
+  }else{
+    navigate("/dashboard");
+  }
+
+}catch(err:any){
+  console.error(err);
+  setError(err.message || "Gagal login");
+}finally{
+  setLoading(false);
+}
+```
+
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  userData: null,
-  loading: true,
-});
+return (
 
-export const useAuth = () => useContext(AuthContext);
+  <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 text-slate-50">
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [userData, setUserData] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
+```
+<motion.div
+initial={{opacity:0,scale:0.95}}
+animate={{opacity:1,scale:1}}
+className="w-full max-w-md"
+>
 
-  useEffect(() => {
+  <div className="text-center mb-10">
 
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+    <Link to="/" className="inline-flex items-center gap-2 mb-8">
 
-      // langsung hilangkan loading supaya UI cepat
-      setLoading(false);
+      <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-bold text-2xl">
+      V
+      </div>
 
-      if (currentUser) {
-        // ambil firestore di background
-        const fetchUser = async () => {
-          try {
-            const docRef = doc(db, "users", currentUser.uid);
-            const docSnap = await getDoc(docRef);
+      <span className="text-2xl font-semibold">
+      Vorux FX
+      </span>
 
-            if (docSnap.exists()) {
-              setUserData(docSnap.data());
-            } else {
-              setUserData(null);
-            }
+    </Link>
 
-          } catch (error) {
-            console.log("Firestore error:", error);
-            setUserData(null);
-          }
-        };
+    <h1 className="text-3xl font-bold mb-2">
+    Selamat Datang
+    </h1>
 
-        fetchUser();
-      } else {
-        setUserData(null);
-      }
+    <p className="text-slate-400">
+    Masuk ke akun trading Anda
+    </p>
 
-    });
+  </div>
 
-    return () => unsubscribe();
+  <div className="bg-slate-900/80 backdrop-blur-xl p-8 rounded-3xl border border-white/10 shadow-2xl">
 
-  }, []);
+    {error && (
 
-  return (
-    <AuthContext.Provider value={{ user, userData, loading }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
+    <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex gap-3 text-red-400 text-sm">
+      <AlertCircle size={18}/>
+      <p>{error}</p>
+    </div>
+
+    )}
+
+    <form onSubmit={handleLogin} className="space-y-5">
+
+      <div>
+
+        <label className="block text-sm mb-2">
+        Email
+        </label>
+
+        <input
+        type="email"
+        required
+        value={email}
+        onChange={(e)=>setEmail(e.target.value)}
+        className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3"
+        placeholder="nama@email.com"
+        />
+
+      </div>
+
+      <div>
+
+        <label className="block text-sm mb-2">
+        Password
+        </label>
+
+        <input
+        type="password"
+        required
+        value={password}
+        onChange={(e)=>setPassword(e.target.value)}
+        className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3"
+        placeholder="••••••••"
+        />
+
+      </div>
+
+      <button
+      type="submit"
+      disabled={loading}
+      className="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl font-medium disabled:opacity-50"
+      >
+
+      {loading ? "Memproses..." : "Masuk"}
+
+      </button>
+
+    </form>
+
+    <p className="text-center text-slate-400 text-sm mt-8">
+
+    Belum punya akun?
+
+    <Link to="/register" className="text-blue-400">
+    Daftar sekarang
+    </Link>
+
+    </p>
+
+  </div>
+
+</motion.div>
+```
+
+  </div>
+
+);
+
+}
