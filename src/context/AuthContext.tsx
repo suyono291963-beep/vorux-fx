@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth, db } from '../firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { auth, db } from "../firebase";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
 interface AuthContextType {
   user: User | null;
@@ -9,7 +9,11 @@ interface AuthContextType {
   loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, userData: null, loading: true });
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  userData: null,
+  loading: true,
+});
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -20,24 +24,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        try {
-          const docRef = doc(db, 'users', currentUser.uid);
+      try {
+        setUser(currentUser);
+
+        if (currentUser) {
+          const docRef = doc(db, "users", currentUser.uid);
           const docSnap = await getDoc(docRef);
+
           if (docSnap.exists()) {
             setUserData(docSnap.data());
           } else {
+            console.warn("User document not found");
             setUserData(null);
           }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
+        } else {
           setUserData(null);
         }
-      } else {
+      } catch (error) {
+        console.error("Error fetching user data:", error);
         setUserData(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -45,7 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider value={{ user, userData, loading }}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
